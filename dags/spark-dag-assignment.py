@@ -14,7 +14,7 @@ spark_dag = DAG(
     schedule_interval=None,
     dagrun_timeout=timedelta(minutes=60),
     description="Extract Postgres and analytic",
-    # start_date=days_ago(1),
+    start_date=days_ago(1),
 )
 
 Extract = SparkSubmitOperator(
@@ -22,7 +22,8 @@ Extract = SparkSubmitOperator(
     conn_id="spark_main",
     task_id="spark_submit_task",
     dag=spark_dag,
-    packages="org.postgresql:postgresql:42.2.18",
+    jars='/spark-scripts/jar/postgresql-42.7.5.jar',
+    # packages="org.postgresql:postgresql:42.2.18",    # opsi bisa .jar atau package
 )
 
 Extract

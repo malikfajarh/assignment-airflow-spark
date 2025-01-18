@@ -2,13 +2,26 @@ import pyspark
 from pyspark.sql import functions as F
 from pyspark.sql.types import *
 from pyspark.sql import Window
+from dotenv import load_dotenv
+from pathlib import Path
+import os
 
-postgres_host = "dataeng-postgres"
-postgres_dw_db = "warehouse"
-postgres_user = "user"
-postgres_password = "password"
+dotenv_path = Path('/opt/app/.env')
+load_dotenv(dotenv_path=dotenv_path)
 
-sparkcontext = pyspark.SparkContext.getOrCreate(conf=(pyspark.SparkConf().setAppName("Dibimbing")))
+postgres_host = os.getenv('POSTGRES_CONTAINER_NAME')
+postgres_dw_db = os.getenv('POSTGRES_DW_DB')
+postgres_user = os.getenv('POSTGRES_USER')
+postgres_password = os.getenv('POSTGRES_PASSWORD')
+
+spark_host = "spark://dibimbing-dataeng-spark-master:7077"
+
+sparkcontext = pyspark.SparkContext.getOrCreate(conf=(
+        pyspark
+        .SparkConf()
+        .setAppName('Dibimbing')
+        .setMaster(spark_host)
+    ))
 sparkcontext.setLogLevel("WARN")
 spark = pyspark.sql.SparkSession(sparkcontext.getOrCreate())
 
@@ -70,6 +83,11 @@ df_country_sales_revenue = (
     .withColumn('revenue', F.format_string("$%,.2f", F.col('revenue')))  
 )
 
+df_sales_by_month.show()
+df_sales_by_day.show()
+df_product_sales_revenue.show(20)
+df_country_sales_revenue.show(20)
+
 window_partition = Window.partitionBy('customerid').orderBy('invoicedate')
 df_customer_retention = (
     df.withColumn('purchase_date', F.to_date(df.invoicedate))  
@@ -86,11 +104,6 @@ df_customer_retention = (
 
 cohort_columns = ['first_purchase'] + [f'month_{i}' for i in range(13)]  
 df_pivot_customer_retention = df_customer_retention.select(cohort_columns).orderBy('first_purchase')
-
-df_sales_by_month.show()
-df_sales_by_day.show()
-df_product_sales_revenue.show(20)
-df_country_sales_revenue.show(20)
 
 (
     df_pivot_customer_retention
